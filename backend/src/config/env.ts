@@ -4,17 +4,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 
-// #region agent log
-const _envCandidates = [
-  path.join(__dirname, '../../.env'),      // backend/.env  (when compiled)
-  path.join(__dirname, '../../../.env'),    // ged-platforme/.env (from src/config with ts-node)
-  path.join(process.cwd(), '.env'),        // cwd/.env
-  path.join(process.cwd(), '../.env'),     // parent of cwd
-];
-const _envFound = _envCandidates.map(p => ({ path: p, exists: fs.existsSync(p) }));
-fetch('http://127.0.0.1:7885/ingest/920df7de-b57e-4171-9db3-22c236ae3eed',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a8e656'},body:JSON.stringify({sessionId:'a8e656',location:'env.ts:dotenv-load',message:'ENV file candidates',data:{cwd:process.cwd(),dirname:__dirname,candidates:_envFound},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-// #endregion
-
 // Charger les variables d'environnement — try multiple paths
 const envPaths = [
   path.join(__dirname, '../../.env'),

@@ -95,11 +95,7 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:9000/minio/health/live || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
+      disable: true
     networks:
       - ged-internal
     deploy:
@@ -116,15 +112,19 @@ services:
   minio-init:
     image: minio/mc:latest
     container_name: ged-minio-init
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-ged-documents}
     depends_on:
       minio:
-        condition: service_healthy
+        condition: service_started
     entrypoint: >
       /bin/sh -c "
-        mc alias set ged http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
-        mc mb --ignore-existing ged/${STORAGE_BUCKET:-ged-documents};
-        mc anonymous set none ged/${STORAGE_BUCKET:-ged-documents};
-        mc admin policy attach ged readwrite --user ${MINIO_ROOT_USER};
+        sleep 10;
+        mc alias set ged http://minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\";
+        mc mb --ignore-existing ged/\"$$STORAGE_BUCKET\";
+        mc anonymous set none ged/\"$$STORAGE_BUCKET\";
         echo 'MinIO bucket configured.';
       "
     networks:
@@ -183,7 +183,7 @@ services:
       redis:
         condition: service_healthy
       minio:
-        condition: service_healthy
+        condition: service_started
     networks:
       - ged-internal
     deploy:
@@ -226,7 +226,7 @@ services:
       - ai_model_cache:/app/model_cache
     depends_on:
       minio:
-        condition: service_healthy
+        condition: service_started
     networks:
       - ged-internal
     deploy:

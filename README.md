@@ -74,7 +74,9 @@ cd ged-platforme
 cp .env.example .env
 ```
 
-Ouvrez `.env` et remplacez toutes les valeurs `CHANGEME_...` par des valeurs sécurisées :
+Le fichier `.env.example` contient des valeurs par défaut pour un **run local** (PostgreSQL, Redis, MinIO, JWT, chiffrement). Vous pouvez lancer avec `cp .env.example .env` sans modification.
+
+Pour la **production**, remplacez par des secrets générés :
 
 ```bash
 # Générer JWT_ACCESS_SECRET (64 octets hex)
@@ -86,8 +88,6 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 # Générer ENCRYPTION_KEY (32 octets hex)
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
-
-> **Pour un test rapide**, vous pouvez utiliser les valeurs pré-générées du fichier `.env.example` telles quelles (à ne jamais faire en production).
 
 ### Étape 3 — Construire et démarrer tous les services
 
@@ -166,7 +166,7 @@ docker compose down -v           # Arrêter + supprimer les volumes (reset compl
 | Champ           | Valeur (défaut .env.example) |
 |-----------------|-------------------------------|
 | Root User       | `minioadmin`                  |
-| Root Password   | `MINIO_ROOT_PASSWORD` dans `.env` |
+| Root Password   | `minioadmin123` (≥ 8 caractères requis) |
 | Bucket          | `ged-documents`               |
 
 ### Redis

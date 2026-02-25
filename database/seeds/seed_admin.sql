@@ -18,8 +18,8 @@ INSERT INTO users (
 VALUES (
   uuid_generate_v4(),
   'admin@ged.gov.ma',
-  -- Admin@GED2024 — bcrypt $2b$12$ hash (à régénérer en production)
-  '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/lewKyNiLXCouAgaGa',
+  -- Admin@GED2024 — bcrypt $2a$12$ (vérifié avec bcryptjs)
+  '$2a$12$Nkfz7v94ubVRuTQpr/MyJOLi0Mee3vFFD99xvnUo9YXUQmyqIQbrG',
   'ADMIN',
   'ACTIVE',
   'Administrateur',

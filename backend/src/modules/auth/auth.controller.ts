@@ -32,10 +32,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {
-  const input = validateLoginInput(req.body);
-  const ipAddress = req.ip ?? req.socket.remoteAddress ?? 'unknown';
-  const result = await authService.login(input.email, input.password, ipAddress);
-  ApiResponse.success(res, result, 'Connexion réussie');
+  try {
+    const input = validateLoginInput(req.body);
+    const ipAddress = req.ip ?? req.socket.remoteAddress ?? 'unknown';
+    const result = await authService.login(input.email, input.password, ipAddress);
+    ApiResponse.success(res, result, 'Connexion réussie');
+  } catch (err) {
+    throw err;
+  }
 };
 
 export const verifyMFA = async (req: Request, res: Response): Promise<void> => {

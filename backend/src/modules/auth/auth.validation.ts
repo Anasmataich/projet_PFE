@@ -78,7 +78,7 @@ export function validateLoginInput(body: unknown): LoginInput {
 
   return {
     email: (data.email as string).toLowerCase().trim(),
-    password: data.password as string,
+    password: (data.password as string).trim(),
   };
 }
 

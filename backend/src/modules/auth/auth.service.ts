@@ -87,12 +87,16 @@ export const authService = {
   },
 
   login: async (email: string, password: string, ipAddress: string): Promise<LoginResult> => {
+    const emailNorm = email.toLowerCase().trim();
+    logger.info(`[Auth:Login] Step 1 — Email reçu: "${emailNorm}"`);
+
     const result = await db.query<UserRow>(
       'SELECT id, email, password_hash, role, status, mfa_enabled, mfa_secret, failed_login_attempts, locked_until FROM users WHERE email = $1',
-      [email.toLowerCase()]
+      [emailNorm]
     );
 
     const user = result.rows[0];
+    logger.info(`[Auth:Login] Step 2 — Utilisateur trouvé: ${!!user}${user ? ` (id=${user.id}, status=${user.status})` : ''}`);
 
     if (!user) {
       await bcrypt.hash(password, 12);
@@ -115,7 +119,13 @@ export const authService = {
       throw AppError.forbidden('Compte inactif ou suspendu. Contactez l\'administrateur.');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    const passwordHash = user.password_hash?.trim();
+    if (!passwordHash) {
+      logger.warn(`[Auth:Login] Utilisateur ${user.id} sans password_hash valide`);
+      throw AppError.unauthorized(GENERIC_LOGIN_ERROR);
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, passwordHash);
     if (!isPasswordValid) {
       await authService.incrementFailedAttempts(user.id);
       await createAuditLog({
@@ -388,7 +398,7 @@ export const authService = {
 
   incrementFailedAttempts: async (userId: string): Promise<void> => {
     const result = await db.query<{ failed_login_attempts: number }>(
-      'UPDATE users SET failed_login_attempts = failed_login_attempts + 1 RETURNING failed_login_attempts',
+      'UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = $1 RETURNING failed_login_attempts',
       [userId]
     );
     const attempts = result.rows[0]?.failed_login_attempts ?? 0;

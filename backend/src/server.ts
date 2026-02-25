@@ -11,9 +11,6 @@ import http from 'http';
 // Point d'entrée principal du serveur
 // ─────────────────────────────────────────────
 const startServer = async (): Promise<void> => {
-  // #region agent log
-  fetch('http://127.0.0.1:7885/ingest/920df7de-b57e-4171-9db3-22c236ae3eed',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a8e656'},body:JSON.stringify({sessionId:'a8e656',location:'server.ts:startServer',message:'Server starting',data:{port:env.PORT,dbHost:env.DB_HOST,redisHost:env.REDIS_HOST,nodeEnv:env.NODE_ENV},timestamp:Date.now(),hypothesisId:'H1-H3'})}).catch(()=>{});
-  // #endregion
   try {
     logger.info('═══════════════════════════════════════════════════');
     logger.info('  GED — Plateforme Documentaire Intelligente & Sécurisée');
@@ -23,24 +20,12 @@ const startServer = async (): Promise<void> => {
 
     // 1. Connexion à PostgreSQL
     logger.info('[Boot] Connexion à PostgreSQL...');
-    // #region agent log
-    fetch('http://127.0.0.1:7885/ingest/920df7de-b57e-4171-9db3-22c236ae3eed',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a8e656'},body:JSON.stringify({sessionId:'a8e656',location:'server.ts:db-connect',message:'Attempting DB connection',data:{host:env.DB_HOST,port:env.DB_PORT,db:env.DB_NAME},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     await connectDatabase();
-    // #region agent log
-    fetch('http://127.0.0.1:7885/ingest/920df7de-b57e-4171-9db3-22c236ae3eed',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a8e656'},body:JSON.stringify({sessionId:'a8e656',location:'server.ts:db-connected',message:'DB connected OK',data:{},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     logger.info('[Boot] ✓ PostgreSQL connecté');
 
     // 2. Connexion à Redis
     logger.info('[Boot] Connexion à Redis...');
-    // #region agent log
-    fetch('http://127.0.0.1:7885/ingest/920df7de-b57e-4171-9db3-22c236ae3eed',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a8e656'},body:JSON.stringify({sessionId:'a8e656',location:'server.ts:redis-connect',message:'Attempting Redis connection',data:{host:env.REDIS_HOST,port:env.REDIS_PORT},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
     await connectRedis();
-    // #region agent log
-    fetch('http://127.0.0.1:7885/ingest/920df7de-b57e-4171-9db3-22c236ae3eed',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a8e656'},body:JSON.stringify({sessionId:'a8e656',location:'server.ts:redis-connected',message:'Redis connected OK',data:{},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
     logger.info('[Boot] ✓ Redis connecté');
 
     // 3. Créer l'application Express
@@ -105,9 +90,6 @@ const startServer = async (): Promise<void> => {
     });
 
   } catch (err) {
-    // #region agent log
-    fetch('http://127.0.0.1:7885/ingest/920df7de-b57e-4171-9db3-22c236ae3eed',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a8e656'},body:JSON.stringify({sessionId:'a8e656',location:'server.ts:boot-error',message:'Boot FAILED',data:{error:(err as Error).message,stack:(err as Error).stack?.substring(0,500)},timestamp:Date.now(),hypothesisId:'H1-H5'})}).catch(()=>{});
-    // #endregion
     logger.error(`[Boot] ÉCHEC du démarrage : ${(err as Error).message}`);
     process.exit(1);
   }
