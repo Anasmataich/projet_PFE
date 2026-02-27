@@ -1,57 +1,95 @@
-import { FileText, Calendar, Tag as TagIcon } from 'lucide-react';
-import { Badge } from '@/components/common/Badge';
-import { formatRelative, formatFileSize } from '@/utils/formatters';
-import { CATEGORY_LABELS, STATUS_COLORS, CONFIDENTIALITY_COLORS, CONFIDENTIALITY_LABELS } from '@/utils/constants';
-import { getFileIcon } from '@/utils/helpers';
+import { FileText, Eye, Download, Clock, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import type { Document } from '@/types/document.types';
+import { cn } from '@/utils/helpers';
 
-interface DocumentCardProps {
+const STATUS_BADGE: Record<string, string> = {
+  APPROUVE:    'badge-green',
+  EN_ATTENTE:  'badge-amber',
+  REJETE:      'badge-red',
+  BROUILLON:   'badge-gray',
+  ARCHIVE:     'badge-purple',
+};
+const STATUS_LABEL: Record<string, string> = {
+  APPROUVE:    'Approuvé',
+  EN_ATTENTE:  'En attente',
+  REJETE:      'Rejeté',
+  BROUILLON:   'Brouillon',
+  ARCHIVE:     'Archivé',
+};
+const CONF_BADGE: Record<string, string> = {
+  PUBLIC:       'badge-green',
+  INTERNE:      'badge-blue',
+  CONFIDENTIEL: 'badge-amber',
+  SECRET:       'badge-red',
+};
+
+interface Props {
   document: Document;
-  onClick: (doc: Document) => void;
+  onDownload?: (id: string) => void;
 }
 
-export function DocumentCard({ document: doc, onClick }: DocumentCardProps) {
+export function DocumentCard({ document: doc, onDownload }: Props) {
+  const navigate = useNavigate();
+
   return (
-    <div onClick={() => onClick(doc)} className="card p-5 hover:shadow-md transition-shadow cursor-pointer group">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-2xl">
-          {getFileIcon(doc.mimeType)}
+    <div
+      className="card-hover p-5 flex flex-col gap-4 cursor-pointer group"
+      onClick={() => navigate(`/documents/${doc.id}`)}
+    >
+      {/* Icon + title */}
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+             style={{ background: 'rgba(37,99,235,0.15)' }}>
+          <FileText className="h-5 w-5 text-blue-400" />
         </div>
-
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-white leading-tight truncate group-hover:text-blue-300 transition-colors">
             {doc.title}
-          </h3>
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">{doc.category}</p>
+        </div>
+      </div>
 
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[doc.status]}`}>
-              {doc.status.replace(/_/g, ' ')}
-            </span>
-            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${CONFIDENTIALITY_COLORS[doc.confidentialityLevel]}`}>
-              {CONFIDENTIALITY_LABELS[doc.confidentialityLevel]}
-            </span>
-          </div>
+      {/* Badges */}
+      <div className="flex flex-wrap gap-2">
+        <span className={STATUS_BADGE[doc.status] ?? 'badge-gray'}>
+          {STATUS_LABEL[doc.status] ?? doc.status}
+        </span>
+        <span className={CONF_BADGE[doc.confidentialityLevel] ?? 'badge-gray'}>
+          <Lock className="h-3 w-3" />
+          {doc.confidentialityLevel}
+        </span>
+        {doc.version > 1 && (
+          <span className="badge-purple">v{doc.version}</span>
+        )}
+      </div>
 
-          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <FileText className="h-3.5 w-3.5" />
-              {CATEGORY_LABELS[doc.category]}
-            </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              {formatRelative(doc.createdAt)}
-            </span>
-            <span>{formatFileSize(doc.fileSize)}</span>
-          </div>
-
-          {doc.tags.length > 0 && (
-            <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-              <TagIcon className="h-3 w-3 text-gray-400" />
-              {doc.tags.slice(0, 3).map((tag) => (
-                <Badge key={tag} className="text-[10px]">{tag}</Badge>
-              ))}
-              {doc.tags.length > 3 && <Badge className="text-[10px]">+{doc.tags.length - 3}</Badge>}
-            </div>
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-auto pt-2"
+           style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <span className="flex items-center gap-1 text-xs text-slate-500">
+          <Clock className="h-3 w-3" />
+          {formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true, locale: fr })}
+        </span>
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+            onClick={(e) => { e.stopPropagation(); navigate(`/documents/${doc.id}`); }}
+            title="Voir"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </button>
+          {onDownload && (
+            <button
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+              onClick={(e) => { e.stopPropagation(); onDownload(doc.id); }}
+              title="Télécharger"
+            >
+              <Download className="h-3.5 w-3.5" />
+            </button>
           )}
         </div>
       </div>

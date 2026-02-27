@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from './Button';
+import { cn } from '@/utils/helpers';
 
 interface PaginationProps {
   page: number;
@@ -9,41 +9,58 @@ interface PaginationProps {
 }
 
 export function Pagination({ page, total, limit, onPageChange }: PaginationProps) {
-  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const totalPages = Math.ceil(total / limit);
   if (totalPages <= 1) return null;
 
-  const pages: (number | '...')[] = [];
+  const pages: (number | '…')[] = [];
   for (let i = 1; i <= totalPages; i++) {
     if (i === 1 || i === totalPages || (i >= page - 1 && i <= page + 1)) {
       pages.push(i);
-    } else if (pages[pages.length - 1] !== '...') {
-      pages.push('...');
+    } else if (pages[pages.length - 1] !== '…') {
+      pages.push('…');
     }
   }
 
+  const btnBase = 'inline-flex h-8 min-w-[32px] items-center justify-center rounded-lg px-2 text-sm font-medium transition-colors';
+
   return (
-    <nav className="flex items-center gap-1.5" aria-label="Pagination">
-      <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={() => onPageChange(page - 1)}
+        disabled={page === 1}
+        className={cn(btnBase, 'text-slate-400 hover:text-white hover:bg-white/8 disabled:opacity-30 disabled:cursor-not-allowed')}
+      >
         <ChevronLeft className="h-4 w-4" />
-      </Button>
-      {pages.map((p, idx) =>
-        p === '...' ? (
-          <span key={`ellipsis-${idx}`} className="px-2 text-sm text-gray-400">…</span>
+      </button>
+
+      {pages.map((p, i) =>
+        p === '…' ? (
+          <span key={`ellipsis-${i}`} className="text-slate-500 px-1 text-sm">…</span>
         ) : (
           <button
             key={p}
             onClick={() => onPageChange(p)}
-            className={`h-8 w-8 rounded-lg text-sm font-medium transition-colors ${
-              p === page ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={cn(btnBase, p === page
+              ? 'bg-blue-600 text-white shadow-glow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-white/8'
+            )}
           >
             {p}
           </button>
         )
       )}
-      <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+
+      <button
+        onClick={() => onPageChange(page + 1)}
+        disabled={page === totalPages}
+        className={cn(btnBase, 'text-slate-400 hover:text-white hover:bg-white/8 disabled:opacity-30 disabled:cursor-not-allowed')}
+      >
         <ChevronRight className="h-4 w-4" />
-      </Button>
-    </nav>
+      </button>
+
+      <span className="ml-2 text-xs text-slate-500">
+        {((page - 1) * limit + 1).toLocaleString()}–{Math.min(page * limit, total).toLocaleString()} / {total.toLocaleString()}
+      </span>
+    </div>
   );
 }

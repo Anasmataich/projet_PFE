@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, FileText, Upload, GitBranch, Search, Users,
+  LayoutDashboard, FileText, Upload, GitBranch, Cpu, Users,
   Shield, BarChart3, Settings, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/utils/helpers';
@@ -12,79 +12,114 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   show?: boolean;
+  group?: string;
 }
+
+const GROUPS = [
+  { key: 'main',  label: 'Navigation' },
+  { key: 'admin', label: 'Administration' },
+];
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUiStore();
-  const { canManageUsers, canViewAudit, canViewReports, canUseAITools, canUpload, canApproveWorkflow } = usePermissions();
+  const {
+    canManageUsers, canViewAudit, canViewReports,
+    canUseAITools, canUpload, canApproveWorkflow,
+  } = usePermissions();
   const location = useLocation();
 
   const navItems: NavItem[] = [
-    { to: '/', label: 'Tableau de bord', icon: LayoutDashboard },
-    { to: '/documents', label: 'Documents', icon: FileText },
-    { to: '/upload', label: 'Uploader', icon: Upload, show: canUpload },
-    { to: '/workflow', label: 'Workflows', icon: GitBranch, show: canApproveWorkflow },
-    { to: '/ai', label: 'Outils IA', icon: Search, show: canUseAITools },
-    { to: '/reports', label: 'Rapports', icon: BarChart3, show: canViewReports },
-    { to: '/audit', label: 'Audit', icon: Shield, show: canViewAudit },
-    { to: '/users', label: 'Utilisateurs', icon: Users, show: canManageUsers },
-    { to: '/settings', label: 'Paramètres', icon: Settings },
+    { to: '/',          label: 'Tableau de bord', icon: LayoutDashboard,  group: 'main' },
+    { to: '/documents', label: 'Documents',        icon: FileText,         group: 'main' },
+    { to: '/upload',    label: 'Uploader',         icon: Upload,           group: 'main', show: canUpload },
+    { to: '/workflow',  label: 'Workflows',        icon: GitBranch,        group: 'main', show: canApproveWorkflow },
+    { to: '/ai',        label: 'Outils IA',        icon: Cpu,              group: 'main', show: canUseAITools },
+    { to: '/reports',   label: 'Rapports',         icon: BarChart3,        group: 'admin', show: canViewReports },
+    { to: '/audit',     label: 'Audit',            icon: Shield,           group: 'admin', show: canViewAudit },
+    { to: '/users',     label: 'Utilisateurs',     icon: Users,            group: 'admin', show: canManageUsers },
+    { to: '/settings',  label: 'Paramètres',       icon: Settings,         group: 'admin' },
   ];
+
+  const visible = navItems.filter((i) => i.show !== false);
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300',
-        sidebarOpen ? 'w-64' : 'w-[72px]'
+        'fixed left-0 top-0 z-30 flex h-screen flex-col transition-all duration-300 ease-in-out',
+        sidebarOpen ? 'w-[240px]' : 'w-[72px]'
       )}
+      style={{
+        background: 'linear-gradient(180deg, #0b1630 0%, #060d1f 100%)',
+        borderRight: '1px solid rgba(255,255,255,0.07)',
+      }}
     >
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-gray-200 px-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white font-bold text-sm">
+      {/* ── LOGO ── */}
+      <div className="flex h-16 shrink-0 items-center gap-3 px-4"
+           style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-extrabold text-sm text-white shadow-glow-sm"
+             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
           GED
         </div>
         {sidebarOpen && (
           <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-gray-900 truncate">GED Plateforme</p>
-            <p className="text-[10px] text-gray-500 truncate">Ministère de l'Éducation</p>
+            <p className="text-sm font-bold text-white truncate leading-tight">GED Plateforme</p>
+            <p className="text-[10px] text-blue-400 truncate">Ministère de l'Éducation</p>
           </div>
         )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navItems
-          .filter((item) => item.show !== false)
-          .map((item) => {
-            const Icon = item.icon;
-            const isActive = item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to);
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                )}
-                title={!sidebarOpen ? item.label : undefined}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                {sidebarOpen && <span className="truncate">{item.label}</span>}
-              </NavLink>
-            );
-          })}
+      {/* ── NAV ── */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        {GROUPS.map((group) => {
+          const items = visible.filter((i) => i.group === group.key);
+          if (items.length === 0) return null;
+          return (
+            <div key={group.key} className="mb-5">
+              {sidebarOpen && (
+                <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest"
+                   style={{ color: 'rgba(148,163,184,0.45)' }}>
+                  {group.label}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = item.to === '/'
+                    ? location.pathname === '/'
+                    : location.pathname.startsWith(item.to);
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      title={!sidebarOpen ? item.label : undefined}
+                      className={cn(
+                        'nav-item',
+                        isActive && 'active',
+                        !sidebarOpen && 'justify-center px-0'
+                      )}
+                    >
+                      <Icon className={cn('h-[18px] w-[18px] shrink-0', isActive ? 'text-blue-400' : '')} />
+                      {sidebarOpen && <span className="truncate">{item.label}</span>}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="border-t border-gray-200 p-3">
+      {/* ── COLLAPSE BUTTON ── */}
+      <div className="px-3 pb-4">
         <button
           onClick={toggleSidebar}
-          className="flex w-full items-center justify-center gap-2 rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+          className="nav-item w-full"
+          title={sidebarOpen ? 'Réduire' : 'Agrandir'}
         >
-          {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          {sidebarOpen && <span>Réduire</span>}
+          {sidebarOpen
+            ? <><ChevronLeft className="h-4 w-4 shrink-0" /><span>Réduire</span></>
+            : <ChevronRight className="h-4 w-4 shrink-0 mx-auto" />
+          }
         </button>
       </div>
     </aside>
