@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Grid3X3, List, Upload, Filter } from 'lucide-react';
-import { Button } from '@/components/common/Button';
-import { SearchBar } from '@/components/common/SearchBar';
+import { FileText, Grid3X3, List, Upload, Filter, Search, X } from 'lucide-react';
 import { Pagination } from '@/components/common/Pagination';
 import { DocumentTable } from '@/components/documents/DocumentTable';
 import { DocumentCard } from '@/components/documents/DocumentCard';
@@ -10,6 +8,7 @@ import { useDocuments } from '@/hooks/useDocuments';
 import { usePermissions } from '@/hooks/usePermissions';
 import { CATEGORY_LABELS, STATUS_LABELS, CONFIDENTIALITY_LABELS } from '@/utils/constants';
 import type { DocumentCategory, DocumentStatus, ConfidentialityLevel } from '@/types/document.types';
+import { cn } from '@/utils/helpers';
 
 export function DocumentsPage() {
   const navigate = useNavigate();
@@ -17,93 +16,155 @@ export function DocumentsPage() {
   const { documents, total, filters, isLoading, search, changePage, applyFilters, resetFilters } = useDocuments();
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [showFilters, setShowFilters] = useState(false);
+  const [searchValue, setSearchValue] = useState(filters.search ?? '');
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchValue(e.target.value);
+    search(e.target.value);
+  };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-fade-in">
+
+      {/* ── HEADER ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{total} document(s) au total</p>
+          <h1 className="page-title">Documents</h1>
+          <p className="page-sub">{total.toLocaleString()} document(s) au total</p>
         </div>
-        <div className="flex items-center gap-2">
-          {canUpload && (
-            <Button onClick={() => navigate('/upload')}>
-              <Upload className="h-4 w-4" /> Uploader
-            </Button>
-          )}
-        </div>
+        {canUpload && (
+          <button onClick={() => navigate('/upload')} className="btn-primary self-start">
+            <Upload className="h-4 w-4" /> Uploader
+          </button>
+        )}
       </div>
 
-      <div className="card p-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <SearchBar placeholder="Rechercher un document…" onSearch={search} defaultValue={filters.search ?? ''} />
+      {/* ── TOOLBAR ── */}
+      <div className="card p-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          {/* Search */}
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+            <input
+              type="text"
+              value={searchValue}
+              onChange={handleSearch}
+              placeholder="Rechercher par titre, catégorie…"
+              className="input pl-9 h-9"
+            />
+            {searchValue && (
+              <button onClick={() => { setSearchValue(''); search(''); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setShowFilters(!showFilters)}>
-              <Filter className="h-4 w-4" /> Filtres
-            </Button>
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-              <button onClick={() => setViewMode('table')} className={`p-2 ${viewMode === 'table' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-600'}`}>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn('btn-secondary h-9 px-3 text-xs', showFilters && 'border-blue-500/50 text-blue-300')}
+            >
+              <Filter className="h-3.5 w-3.5" /> Filtres
+            </button>
+
+            {/* View toggle */}
+            <div className="flex rounded-xl overflow-hidden"
+                 style={{ border: '1px solid rgba(255,255,255,0.10)' }}>
+              <button
+                onClick={() => setViewMode('table')}
+                className={cn('flex h-9 w-9 items-center justify-center transition-colors',
+                  viewMode === 'table' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200')}
+              >
                 <List className="h-4 w-4" />
               </button>
-              <button onClick={() => setViewMode('grid')} className={`p-2 ${viewMode === 'grid' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-600'}`}>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn('flex h-9 w-9 items-center justify-center transition-colors',
+                  viewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200')}
+              >
                 <Grid3X3 className="h-4 w-4" />
               </button>
             </div>
           </div>
         </div>
 
+        {/* ── FILTERS PANEL ── */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex flex-wrap gap-3 items-end">
-              <div>
-                <label className="label">Catégorie</label>
-                <select className="input w-44" value={filters.category ?? ''} onChange={(e) => applyFilters({ category: (e.target.value as DocumentCategory) || undefined })}>
-                  <option value="">Toutes</option>
-                  {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">Statut</label>
-                <select className="input w-36" value={filters.status ?? ''} onChange={(e) => applyFilters({ status: (e.target.value as DocumentStatus) || undefined })}>
-                  <option value="">Tous</option>
-                  {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">Confidentialité</label>
-                <select className="input w-36" value={filters.confidentialityLevel ?? ''} onChange={(e) => applyFilters({ confidentialityLevel: (e.target.value as ConfidentialityLevel) || undefined })}>
-                  <option value="">Toutes</option>
-                  {Object.entries(CONFIDENTIALITY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </div>
-              <Button variant="ghost" size="sm" onClick={resetFilters}>Réinitialiser</Button>
+          <div className="mt-3 pt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-in"
+               style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <div>
+              <label className="label">Catégorie</label>
+              <select
+                className="select"
+                value={filters.category ?? ''}
+                onChange={(e) => applyFilters({ category: (e.target.value as DocumentCategory) || undefined })}
+              >
+                <option value="">Toutes</option>
+                {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Statut</label>
+              <select
+                className="select"
+                value={filters.status ?? ''}
+                onChange={(e) => applyFilters({ status: (e.target.value as DocumentStatus) || undefined })}
+              >
+                <option value="">Tous</option>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Confidentialité</label>
+              <select
+                className="select"
+                value={filters.confidentialityLevel ?? ''}
+                onChange={(e) => applyFilters({ confidentialityLevel: (e.target.value as ConfidentialityLevel) || undefined })}
+              >
+                <option value="">Tous niveaux</option>
+                {Object.entries(CONFIDENTIALITY_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:col-span-3 flex justify-end">
+              <button onClick={resetFilters} className="btn-ghost text-xs px-3 py-2">
+                <X className="h-3.5 w-3.5" /> Réinitialiser
+              </button>
             </div>
           </div>
         )}
       </div>
 
+      {/* ── CONTENT ── */}
       {viewMode === 'table' ? (
-        <DocumentTable documents={documents} isLoading={isLoading} onRowClick={(doc) => navigate(`/documents/${doc.id}`)} />
+        <div className="table-wrapper animate-fade-in">
+          <DocumentTable documents={documents} isLoading={isLoading} />
+        </div>
       ) : (
-        isLoading ? (
-          <div className="flex justify-center py-16"><FileText className="h-12 w-12 text-gray-200 animate-pulse" /></div>
-        ) : documents.length === 0 ? (
-          <div className="text-center py-16 card">
-            <FileText className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500">Aucun document trouvé</p>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {documents.map((doc) => <DocumentCard key={doc.id} document={doc} onClick={() => navigate(`/documents/${doc.id}`)} />)}
-          </div>
-        )
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 animate-fade-in">
+          {documents.map((doc) => (
+            <DocumentCard key={doc.id} document={doc} />
+          ))}
+        </div>
       )}
 
-      <div className="flex justify-center">
-        <Pagination page={filters.page ?? 1} total={total} limit={filters.limit ?? 20} onPageChange={changePage} />
-      </div>
+      {/* ── PAGINATION ── */}
+      {total > (filters.limit ?? 20) && (
+        <div className="flex justify-center">
+          <Pagination
+            page={filters.page ?? 1}
+            total={total}
+            limit={filters.limit ?? 20}
+            onPageChange={changePage}
+          />
+        </div>
+      )}
     </div>
   );
 }

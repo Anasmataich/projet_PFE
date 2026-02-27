@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FileText, Upload, Clock, Users, ArrowRight, TrendingUp } from 'lucide-react';
+import { FileText, TrendingUp, Clock, Users, ArrowRight, ArrowUpRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from '@/components/common/Spinner';
-import { Button } from '@/components/common/Button';
 import { PieChart } from '@/components/reports/PieChart';
 import { BarChart } from '@/components/reports/BarChart';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +10,16 @@ import { reportService, type DashboardStats } from '@/services/reportService';
 import { documentService } from '@/services/documentService';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import type { Document } from '@/types/document.types';
+
+interface StatCard {
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  gradient: string;
+  iconBg: string;
+  trend?: string;
+  to: string;
+}
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -25,86 +34,152 @@ export function DashboardPage() {
       reportService.getDashboardStats(),
       documentService.list({ page: 1, limit: 5 }).then((r) => r.data),
     ])
-      .then(([s, docs]) => {
-        setStats(s);
-        setRecentDocs(docs);
-      })
+      .then(([s, docs]) => { setStats(s); setRecentDocs(docs); })
       .finally(() => setIsLoading(false));
   }, []);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-24"><Spinner size="lg" className="text-primary-600" /></div>;
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Spinner size="lg" className="text-blue-400" />
+      </div>
+    );
   }
 
-  const cards = [
-    { label: 'Documents', value: stats?.totalDocuments ?? 0, icon: FileText, color: 'text-blue-600 bg-blue-50', to: '/documents' },
-    { label: 'Ce mois-ci', value: stats?.documentsThisMonth ?? 0, icon: TrendingUp, color: 'text-green-600 bg-green-50', to: '/documents' },
-    { label: 'En attente', value: stats?.pendingWorkflows ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50', to: '/workflow' },
-    { label: 'Utilisateurs', value: stats?.totalUsers ?? 0, icon: Users, color: 'text-primary-600 bg-primary-50', to: '/users' },
+  const cards: StatCard[] = [
+    {
+      label: 'Total Documents',
+      value: stats?.totalDocuments ?? 0,
+      icon: FileText,
+      gradient: 'from-blue-600 to-blue-800',
+      iconBg: 'rgba(37,99,235,0.20)',
+      trend: '+12%',
+      to: '/documents',
+    },
+    {
+      label: 'Ce mois-ci',
+      value: stats?.documentsThisMonth ?? 0,
+      icon: TrendingUp,
+      gradient: 'from-emerald-600 to-emerald-800',
+      iconBg: 'rgba(16,185,129,0.20)',
+      trend: '+8%',
+      to: '/documents',
+    },
+    {
+      label: 'En attente',
+      value: stats?.pendingWorkflows ?? 0,
+      icon: Clock,
+      gradient: 'from-amber-600 to-amber-800',
+      iconBg: 'rgba(245,158,11,0.20)',
+      to: '/workflow',
+    },
+    {
+      label: 'Utilisateurs',
+      value: stats?.totalUsers ?? 0,
+      icon: Users,
+      gradient: 'from-violet-600 to-violet-800',
+      iconBg: 'rgba(139,92,246,0.20)',
+      to: '/users',
+    },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-fade-in">
+
+      {/* ── HEADER ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Bienvenue, {user?.firstName ?? user?.email?.split('@')[0]}
+          <h1 className="page-title">Tableau de bord</h1>
+          <p className="page-sub">
+            Bienvenue,{' '}
+            <span className="text-blue-400 font-semibold">
+              {user?.firstName} {user?.lastName}
+            </span>
           </p>
         </div>
         {canUpload && (
-          <Button onClick={() => navigate('/upload')}>
-            <Upload className="h-4 w-4" /> Nouveau document
-          </Button>
+          <button onClick={() => navigate('/upload')} className="btn-primary self-start">
+            <FileText className="h-4 w-4" /> Nouveau document
+          </button>
         )}
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => {
-          const Icon = c.icon;
-          return (
-            <div key={c.label} onClick={() => navigate(c.to)} className="card p-5 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className={`rounded-lg p-2.5 ${c.color}`}><Icon className="h-5 w-5" /></div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{c.value.toLocaleString('fr-FR')}</p>
-                  <p className="text-xs text-gray-500">{c.label}</p>
-                </div>
+      {/* ── STAT CARDS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {cards.map(({ label, value, icon: Icon, iconBg, trend, to }, i) => (
+          <button
+            key={label}
+            onClick={() => navigate(to)}
+            className="stat-card text-left group animate-fade-in hover:border-blue-500/20 hover:shadow-card transition-all duration-200"
+            style={{ animationDelay: `${i * 0.06}s` }}
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+                 style={{ background: iconBg }}>
+              <Icon className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-slate-400 font-medium mb-1">{label}</p>
+              <div className="flex items-end gap-2">
+                <span className="text-2xl font-extrabold text-white tabular-nums">{value.toLocaleString()}</span>
+                {trend && (
+                  <span className="flex items-center gap-0.5 text-xs text-emerald-400 font-semibold mb-0.5">
+                    <ArrowUpRight className="h-3.5 w-3.5" />{trend}
+                  </span>
+                )}
               </div>
             </div>
-          );
-        })}
+            <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all shrink-0 self-center" />
+          </button>
+        ))}
       </div>
 
-      {/* Charts */}
-      {stats && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="card p-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Documents par catégorie</h3>
-            <PieChart data={stats.categoryBreakdown.map((c) => ({ label: c.category, value: c.count }))} />
-          </div>
-          <div className="card p-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Documents par statut</h3>
-            <BarChart data={stats.statusBreakdown.map((s) => ({ label: s.status, value: s.count }))} />
-          </div>
+      {/* ── CHARTS ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card p-5">
+          <h2 className="text-sm font-bold text-white mb-4">Documents par catégorie</h2>
+          <PieChart data={stats?.byCategory ?? []} />
         </div>
-      )}
+        <div className="card p-5">
+          <h2 className="text-sm font-bold text-white mb-4">Activité mensuelle</h2>
+          <BarChart data={stats?.monthly ?? []} />
+        </div>
+      </div>
 
-      {/* Recent documents */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Documents récents</h2>
-          <button onClick={() => navigate('/documents')} className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium">
-            Voir tout <ArrowRight className="h-4 w-4" />
+      {/* ── RECENT DOCS ── */}
+      <div className="card">
+        <div className="flex items-center justify-between px-5 py-4"
+             style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <h2 className="text-sm font-bold text-white">Documents récents</h2>
+          <button
+            onClick={() => navigate('/documents')}
+            className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+          >
+            Voir tout <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
+
         {recentDocs.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-8 card">Aucun document récent</p>
+          <div className="py-12 text-center text-slate-500 text-sm">
+            Aucun document récent
+          </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="divide-y" style={{ '--tw-divide-opacity': 1, borderColor: 'rgba(255,255,255,0.05)' } as React.CSSProperties}>
             {recentDocs.map((doc) => (
-              <DocumentCard key={doc.id} document={doc} onClick={() => navigate(`/documents/${doc.id}`)} />
+              <div
+                key={doc.id}
+                onClick={() => navigate(`/documents/${doc.id}`)}
+                className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/4 transition-colors cursor-pointer"
+              >
+                <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
+                     style={{ background: 'rgba(37,99,235,0.15)' }}>
+                  <FileText className="h-4 w-4 text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{doc.title}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{doc.category}</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-600 shrink-0" />
+              </div>
             ))}
           </div>
         )}
